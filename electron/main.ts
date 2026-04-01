@@ -171,11 +171,37 @@ function startProductionServer() {
   }
 
   const localServer = http.createServer((req, res) => {
+    // /terminal/ 代理到 ttyd
+    if (req.url?.startsWith('/terminal')) {
+      const proxy = http.request(
+        { hostname: '127.0.0.1', port: 7681, path: req.url, method: req.method, headers: req.headers },
+        (pRes) => { res.writeHead(pRes.statusCode || 200, pRes.headers); pRes.pipe(res) }
+      )
+      req.pipe(proxy)
+      proxy.on('error', () => res.end())
+      return
+    }
+
     let filePath = path.join(distPath, req.url === '/' ? 'index.html' : req.url || '')
     if (!fs.existsSync(filePath)) filePath = path.join(distPath, 'index.html')
     const ext = path.extname(filePath)
     res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' })
     fs.createReadStream(filePath).pipe(res)
+  })
+
+  // WebSocket 代理（ttyd 终端需要）
+  localServer.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/terminal')) {
+      const upstream = net.connect(7681, '127.0.0.1', () => {
+        const rawReq = `GET ${req.url} HTTP/1.1\r\n` +
+          Object.entries(req.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n\r\n'
+        upstream.write(rawReq)
+        upstream.write(head)
+        socket.pipe(upstream).pipe(socket)
+      })
+      upstream.on('error', () => socket.destroy())
+      socket.on('error', () => upstream.destroy())
+    }
   })
 
   localServer.listen(APP_PORT, '127.0.0.1', () => {
