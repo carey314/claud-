@@ -1,7 +1,7 @@
 export default {
   // 通用
   app: {
-    name: '盯盘台',
+    name: '看盘侠',
     online: '在线',
     offline: '未连接',
     refresh: '刷新数据',
@@ -191,6 +191,6 @@ export default {
     installClaude: '安装 Claude Code',
     setupService: '配置常驻服务',
     skip: '跳过',
-    enter: '进入盯盘台',
+    enter: '进入看盘侠',
   },
 } as const

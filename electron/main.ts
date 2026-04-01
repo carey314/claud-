@@ -218,7 +218,7 @@ function createTray() {
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAbwAAAG8B8aLcQwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABNSURBVDiNY/z//z8DEwMDAwMDAxMDGQCSZoIrpKsBjKQawMjIyEA2A/7//89ENgMYGRnJZgDIFSQbAHIFyQYwkssARkZGxv///5NsAABELQ0fk/hIHwAAAABJRU5ErkJggg=='
   )
   tray = new Tray(icon.resize({ width: 16, height: 16 }))
-  tray.setToolTip('盯盘台')
+  tray.setToolTip('看盘侠')
 
   const contextMenu = Menu.buildFromTemplate([
     { label: '显示窗口', click: () => mainWindow?.show() },

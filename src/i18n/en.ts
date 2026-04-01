@@ -1,6 +1,6 @@
 export default {
   app: {
-    name: 'TradeWatch',
+    name: 'KanPanXia',
     online: 'Online',
     offline: 'Disconnected',
     refresh: 'Refresh',
@@ -179,6 +179,6 @@ export default {
     installClaude: 'Install Claude Code',
     setupService: 'Setup service',
     skip: 'Skip',
-    enter: 'Enter TradeWatch',
+    enter: 'Enter KanPanXia',
   },
 } as const
