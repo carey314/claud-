@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import path from 'path'
 import os from 'os'
 import { fileURLToPath } from 'url'
+import { spawn, type ChildProcess } from 'child_process'
 import * as pty from 'node-pty'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -12,6 +13,34 @@ const CWD = os.homedir() + '/projects/AI_Project/todoDemo/claude盯盘'
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let shell: pty.IPty | null = null
+let ttydProcess: ChildProcess | null = null
+
+// ---- ttyd 管理（生产模式下为前端终端提供服务）----
+function startTtyd() {
+  const env = { ...process.env }
+  delete env.CLAUDECODE
+  delete env.CLAUDE_CODE
+
+  ttydProcess = spawn('ttyd', [
+    '--port', '7681',
+    '--writable',
+    '--base-path', '/terminal',
+    '--max-clients', '5',
+    '/bin/zsh', '-l',
+  ], {
+    cwd: CWD,
+    env,
+    stdio: 'pipe',
+  })
+
+  ttydProcess.on('error', (err) => {
+    console.error('[ttyd] 启动失败:', err.message)
+    console.error('[ttyd] 请确保已安装 ttyd: brew install ttyd')
+  })
+
+  ttydProcess.stderr?.on('data', () => {})
+  console.log('[ttyd] 已启动 http://localhost:7681/terminal/')
+}
 
 // ---- PTY 管理 ----
 function createShell() {
@@ -78,7 +107,60 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+    // 生产模式：启动 ttyd + 本地 HTTP 服务
+    startTtyd()
+
+    // 用内置 HTTP 服务 serve dist，让 iframe 能正常访问 /terminal/
+    const http = require('http')
+    const fs = require('fs')
+    const distPath = path.join(__dirname, '../dist')
+
+    const mimeTypes: Record<string, string> = {
+      '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css',
+      '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
+    }
+
+    const localServer = http.createServer((req: any, res: any) => {
+      // 代理 /terminal/ 到 ttyd
+      if (req.url?.startsWith('/terminal')) {
+        const proxy = http.request({ hostname: '127.0.0.1', port: 7681, path: req.url, method: req.method, headers: req.headers }, (pRes: any) => {
+          res.writeHead(pRes.statusCode, pRes.headers)
+          pRes.pipe(res)
+        })
+        req.pipe(proxy)
+        proxy.on('error', () => res.end())
+        return
+      }
+
+      let filePath = path.join(distPath, req.url === '/' ? 'index.html' : req.url)
+      if (!fs.existsSync(filePath)) filePath = path.join(distPath, 'index.html')
+
+      const ext = path.extname(filePath)
+      res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' })
+      fs.createReadStream(filePath).pipe(res)
+    })
+
+    // WebSocket 代理 for ttyd
+    localServer.on('upgrade', (req: any, socket: any, head: any) => {
+      if (req.url?.startsWith('/terminal')) {
+        const net = require('net')
+        const upstream = net.connect(7681, '127.0.0.1', () => {
+          const rawReq = `GET ${req.url} HTTP/1.1\r\n` +
+            Object.entries(req.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n\r\n'
+          upstream.write(rawReq)
+          upstream.write(head)
+          socket.pipe(upstream).pipe(socket)
+        })
+        upstream.on('error', () => socket.destroy())
+        socket.on('error', () => upstream.destroy())
+        return
+      }
+    })
+
+    localServer.listen(18080, '127.0.0.1', () => {
+      console.log('[app] http://127.0.0.1:18080')
+      mainWindow?.loadURL('http://127.0.0.1:18080')
+    })
   }
 
   // 关闭窗口→隐藏到托盘
@@ -147,6 +229,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   app.isQuitting = true
   shell?.kill()
+  ttydProcess?.kill()
 })
 
 // 扩展 app 类型
