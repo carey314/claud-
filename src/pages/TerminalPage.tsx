@@ -16,10 +16,11 @@ export default function TerminalPage() {
     )
   }
 
+  // 优先同源代理，fallback 直连 ttyd
   return (
     <div className="w-full h-full bg-[#0f1013]">
       <iframe
-        src="/terminal/"
+        src="http://localhost:7681/terminal/"
         className="w-full h-full border-0"
         allow="clipboard-read; clipboard-write"
       />

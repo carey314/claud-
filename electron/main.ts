@@ -103,6 +103,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      webSecurity: false,  // 允许 iframe 跨域加载 ttyd
     },
   })
 
