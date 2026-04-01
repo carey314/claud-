@@ -1,0 +1,15 @@
+appId: com.carey.trading-terminal
+productName: 盯盘终端
+directories:
+  buildResources: build
+  output: release
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - "!node_modules/**/*"
+  - node_modules/node-pty/**/*
+mac:
+  category: public.app-category.finance
+  target: dir
+  artifactName: ${productName}-${version}-${arch}.${ext}
+asar: false
