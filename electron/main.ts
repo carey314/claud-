@@ -74,6 +74,82 @@ function createShell() {
   })
 }
 
+// ---- 环境检测 IPC ----
+function execCmd(cmd: string): Promise<string> {
+  return new Promise((resolve) => {
+    const child = spawn('/bin/zsh', ['-lc', cmd], { env: process.env })
+    let out = ''
+    child.stdout?.on('data', (d: Buffer) => { out += d.toString() })
+    child.stderr?.on('data', (d: Buffer) => { out += d.toString() })
+    child.on('close', () => resolve(out.trim()))
+    child.on('error', () => resolve(''))
+  })
+}
+
+ipcMain.handle('env:check', async () => {
+  const [ttydPath, claudePath, brewPath, ttydPort] = await Promise.all([
+    execCmd('which ttyd'),
+    execCmd('which claude'),
+    execCmd('which brew'),
+    execCmd('lsof -i :7681 -t'),
+  ])
+  return {
+    hasBrew: !!brewPath,
+    hasTtyd: !!ttydPath,
+    hasClaude: !!claudePath,
+    ttydRunning: !!ttydPort,
+    ttydPath,
+    claudePath,
+    platform: process.platform,
+    arch: process.arch,
+  }
+})
+
+ipcMain.handle('env:setup-ttyd', async () => {
+  const result = await execCmd('brew install ttyd 2>&1')
+  return { success: result.includes('already installed') || !result.includes('Error'), output: result }
+})
+
+ipcMain.handle('env:setup-service', async () => {
+  const plistPath = `${os.homedir()}/Library/LaunchAgents/com.carey.ttyd.plist`
+  const ttydPath = (await execCmd('which ttyd')).trim()
+  if (!ttydPath) return { success: false, output: '请先安装 ttyd' }
+
+  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.carey.ttyd</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${ttydPath}</string>
+    <string>--port</string><string>7681</string>
+    <string>--writable</string>
+    <string>--base-path</string><string>/terminal</string>
+    <string>--max-clients</string><string>5</string>
+    <string>/bin/zsh</string><string>-l</string>
+  </array>
+  <key>WorkingDirectory</key><string>${CWD}</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/ttyd.log</string>
+  <key>StandardErrorPath</key><string>/tmp/ttyd.err</string>
+</dict>
+</plist>`
+
+  fs.writeFileSync(plistPath, plist)
+  await execCmd(`launchctl unload ${plistPath} 2>/dev/null; launchctl load ${plistPath}`)
+  // 等 ttyd 启动
+  await new Promise(r => setTimeout(r, 1500))
+  const check = await execCmd('lsof -i :7681 -t')
+  return { success: !!check, output: check ? '服务已启动' : '启动失败，请手动运行 ttyd' }
+})
+
+ipcMain.handle('env:setup-claude', async () => {
+  const result = await execCmd('npm install -g @anthropic-ai/claude-code 2>&1 | tail -3')
+  return { success: !result.includes('ERR'), output: result }
+})
+
 // ---- IPC ----
 ipcMain.on('terminal:input', (_e, data: string) => {
   shell?.write(data)
@@ -142,7 +218,7 @@ function createTray() {
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAbwAAAG8B8aLcQwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAABNSURBVDiNY/z//z8DEwMDAwMDAxMDGQCSZoIrpKsBjKQawMjIyEA2A/7//89ENgMYGRnJZgDIFSQbAHIFyQYwkssARkZGxv///5NsAABELQ0fk/hIHwAAAABJRU5ErkJggg=='
   )
   tray = new Tray(icon.resize({ width: 16, height: 16 }))
-  tray.setToolTip('盯盘终端')
+  tray.setToolTip('盯盘台')
 
   const contextMenu = Menu.buildFromTemplate([
     { label: '显示窗口', click: () => mainWindow?.show() },

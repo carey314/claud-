@@ -1,5 +1,5 @@
 appId: com.carey.trading-terminal
-productName: 盯盘终端
+productName: 盯盘台
 directories:
   buildResources: build
   output: release

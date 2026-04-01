@@ -2,10 +2,12 @@ import { useState, useRef, useCallback } from 'react'
 import {
   Wallet, ShieldCheck, Flame,
   BookOpen, Clock, LayoutDashboard,
-  GripVertical, RefreshCw,
+  GripVertical, RefreshCw, Globe,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { AppProvider } from './store/AppContext'
+import { I18nProvider, useI18n } from './i18n'
+import SetupPage from './pages/SetupPage'
 import TerminalPage from './pages/TerminalPage'
 import DashboardPage from './pages/DashboardPage'
 import PortfolioPage from './pages/PortfolioPage'
@@ -14,16 +16,16 @@ import MonsterStockPage from './pages/MonsterStockPage'
 import JournalPage from './pages/JournalPage'
 import TasksPage from './pages/TasksPage'
 
-const tabs = [
-  { id: 'dashboard', label: '仪表盘', icon: LayoutDashboard },
-  { id: 'portfolio', label: '持仓', icon: Wallet },
-  { id: 'system', label: '交易系统', icon: ShieldCheck },
-  { id: 'monster', label: '妖股监控', icon: Flame },
-  { id: 'journal', label: '市场日志', icon: BookOpen },
-  { id: 'tasks', label: '定时任务', icon: Clock },
+const tabDefs = [
+  { id: 'dashboard', navKey: 'dashboard' as const, icon: LayoutDashboard },
+  { id: 'portfolio', navKey: 'portfolio' as const, icon: Wallet },
+  { id: 'system', navKey: 'system' as const, icon: ShieldCheck },
+  { id: 'monster', navKey: 'monster' as const, icon: Flame },
+  { id: 'journal', navKey: 'journal' as const, icon: BookOpen },
+  { id: 'tasks', navKey: 'tasks' as const, icon: Clock },
 ] as const
 
-type TabId = (typeof tabs)[number]['id']
+type TabId = (typeof tabDefs)[number]['id']
 
 const pageMap: Record<TabId, React.FC> = {
   dashboard: DashboardPage,
@@ -35,8 +37,9 @@ const pageMap: Record<TabId, React.FC> = {
 }
 
 function AppInner() {
+  const { t, locale, setLocale } = useI18n()
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
-  const [leftWidth, setLeftWidth] = useState(50) // 左侧占比%
+  const [leftWidth, setLeftWidth] = useState(50)
   const [dragging, setDragging] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
@@ -46,6 +49,8 @@ function AppInner() {
     setRefreshKey(k => k + 1)
     setTimeout(() => setRefreshing(false), 600)
   }
+
+  const toggleLocale = () => setLocale(locale === 'zh' ? 'en' : 'zh')
   const containerRef = useRef<HTMLDivElement>(null)
 
   const Page = pageMap[activeTab]
@@ -82,13 +87,14 @@ function AppInner() {
         {/* 左侧标题 */}
         <div className="flex items-center gap-2 text-xs text-[#868e96] font-mono" style={{ width: `calc(${leftWidth}% - 80px)` }}>
           <span className="text-[#10b981]">●</span>
-          <span>claude盯盘</span>
+          <span>{t.app.name}</span>
         </div>
         {/* 右侧 Tab 导航 */}
         <div className="flex-1 flex items-center h-full" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          {tabs.map((tab) => {
+          {tabDefs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
+            const label = t.nav[tab.navKey]
             return (
               <button
                 key={tab.id}
@@ -100,7 +106,7 @@ function AppInner() {
                 }`}
               >
                 <Icon size={13} />
-                <span className="font-medium">{tab.label}</span>
+                <span className="font-medium">{label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="tab-indicator"
@@ -110,13 +116,14 @@ function AppInner() {
               </button>
             )
           })}
-          {/* 刷新按钮 */}
-          <button
-            onClick={handleRefresh}
-            className="ml-2 px-2 h-full flex items-center text-[#868e96] hover:text-[#f59e0b] transition-colors"
-            title="刷新数据"
-          >
+          {/* 刷新 */}
+          <button onClick={handleRefresh} className="ml-2 px-2 h-full flex items-center text-[#868e96] hover:text-[#f59e0b] transition-colors" title={t.app.refresh}>
             <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
+          </button>
+          {/* 语言切换 */}
+          <button onClick={toggleLocale} className="px-2 h-full flex items-center text-[#868e96] hover:text-[#f59e0b] transition-colors" title="中/EN">
+            <Globe size={13} />
+            <span className="ml-1 text-[10px] font-mono">{locale === 'zh' ? '中' : 'EN'}</span>
           </button>
         </div>
       </div>
@@ -164,9 +171,32 @@ function AppInner() {
 }
 
 export default function App() {
+  const [setupDone, setSetupDone] = useState(false)
+
+  // 非 Electron 环境跳过 setup
+  if (!window.electronAPI && !setupDone) {
+    return (
+      <I18nProvider>
+        <AppProvider>
+          <AppInner />
+        </AppProvider>
+      </I18nProvider>
+    )
+  }
+
+  if (!setupDone && window.electronAPI) {
+    return (
+      <I18nProvider>
+        <SetupPage onReady={() => setSetupDone(true)} />
+      </I18nProvider>
+    )
+  }
+
   return (
-    <AppProvider>
-      <AppInner />
-    </AppProvider>
+    <I18nProvider>
+      <AppProvider>
+        <AppInner />
+      </AppProvider>
+    </I18nProvider>
   )
 }

@@ -20,4 +20,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('terminal:exit', listener)
     return () => ipcRenderer.removeListener('terminal:exit', listener)
   },
+
+  // 环境检测 & 安装
+  checkEnv: () => ipcRenderer.invoke('env:check'),
+  setupTtyd: () => ipcRenderer.invoke('env:setup-ttyd'),
+  setupService: () => ipcRenderer.invoke('env:setup-service'),
+  setupClaude: () => ipcRenderer.invoke('env:setup-claude'),
+  skipSetup: () => ipcRenderer.send('env:skip'),
 })
