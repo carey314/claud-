@@ -1,6 +1,9 @@
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } from 'electron'
 import path from 'path'
 import os from 'os'
+import fs from 'fs'
+import http from 'http'
+import net from 'net'
 import { fileURLToPath } from 'url'
 import { spawn, type ChildProcess } from 'child_process'
 import * as pty from 'node-pty'
@@ -110,29 +113,25 @@ function createWindow() {
     // 生产模式：启动 ttyd + 本地 HTTP 服务
     startTtyd()
 
-    // 用内置 HTTP 服务 serve dist，让 iframe 能正常访问 /terminal/
-    const http = require('http')
-    const fs = require('fs')
     const distPath = path.join(__dirname, '../dist')
-
     const mimeTypes: Record<string, string> = {
       '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css',
       '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
     }
 
-    const localServer = http.createServer((req: any, res: any) => {
+    const localServer = http.createServer((req, res) => {
       // 代理 /terminal/ 到 ttyd
       if (req.url?.startsWith('/terminal')) {
-        const proxy = http.request({ hostname: '127.0.0.1', port: 7681, path: req.url, method: req.method, headers: req.headers }, (pRes: any) => {
-          res.writeHead(pRes.statusCode, pRes.headers)
-          pRes.pipe(res)
-        })
+        const proxy = http.request(
+          { hostname: '127.0.0.1', port: 7681, path: req.url, method: req.method, headers: req.headers },
+          (pRes) => { res.writeHead(pRes.statusCode || 200, pRes.headers); pRes.pipe(res) }
+        )
         req.pipe(proxy)
         proxy.on('error', () => res.end())
         return
       }
 
-      let filePath = path.join(distPath, req.url === '/' ? 'index.html' : req.url)
+      let filePath = path.join(distPath, req.url === '/' ? 'index.html' : req.url || '')
       if (!fs.existsSync(filePath)) filePath = path.join(distPath, 'index.html')
 
       const ext = path.extname(filePath)
@@ -141,9 +140,8 @@ function createWindow() {
     })
 
     // WebSocket 代理 for ttyd
-    localServer.on('upgrade', (req: any, socket: any, head: any) => {
+    localServer.on('upgrade', (req, socket, head) => {
       if (req.url?.startsWith('/terminal')) {
-        const net = require('net')
         const upstream = net.connect(7681, '127.0.0.1', () => {
           const rawReq = `GET ${req.url} HTTP/1.1\r\n` +
             Object.entries(req.headers).map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n\r\n'
@@ -153,7 +151,6 @@ function createWindow() {
         })
         upstream.on('error', () => socket.destroy())
         socket.on('error', () => upstream.destroy())
-        return
       }
     })
 
