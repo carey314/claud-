@@ -15,6 +15,8 @@ export interface SetupResult {
 }
 
 export interface ElectronAPI {
+  getTradingData: () => Promise<any>
+  onTradingDataUpdate: (cb: (data: any) => void) => () => void
   terminalWrite: (data: string) => void
   terminalResize: (cols: number, rows: number) => void
   terminalRestart: () => void

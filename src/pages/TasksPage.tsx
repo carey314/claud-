@@ -4,7 +4,7 @@ import {
   Clock, Plus, MoreVertical, Check, Play, RefreshCw,
   ChevronDown, ChevronRight, Terminal, Link2,
 } from 'lucide-react'
-import { cronJobs } from '@/data/trading-data'
+import { useTradingData } from '@/store/TradingDataContext'
 
 function Toggle({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
   return (
@@ -33,6 +33,7 @@ const executionLog = [
 ]
 
 export default function TasksPage() {
+  const { cronJobs } = useTradingData()
   const [jobs, setJobs] = useState(cronJobs.map(j => ({ ...j })))
   const [expandedJob, setExpandedJob] = useState<number | null>(0)
 

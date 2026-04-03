@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { motion } from 'motion/react'
 import { RefreshCw, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import { etfHoldings, stockHoldings, fundHoldings, summary } from '@/data/trading-data'
+import { useTradingData } from '@/store/TradingDataContext'
 import { formatMoney, formatPercent, pnlColor } from '@/lib/utils'
 
 type AccountTab = 'guoxin' | 'tonghuashun' | 'zhifubao'
 
 export default function PortfolioPage() {
+  const { etfHoldings, stockHoldings, fundHoldings, summary } = useTradingData()
   const [activeAccount, setActiveAccount] = useState<AccountTab>('guoxin')
 
   const etfTotal = etfHoldings.reduce((s, e) => s + e.value, 0)
@@ -206,7 +207,7 @@ export default function PortfolioPage() {
 }
 
 function FundTable({ funds, total, pnl }: {
-  funds: typeof fundHoldings; total: number; pnl: number
+  funds: typeof import('@/data/trading-data').fundHoldings; total: number; pnl: number
 }) {
   return (
     <div className="bg-[#1e1f22] border border-[#2c2e33] rounded overflow-hidden">

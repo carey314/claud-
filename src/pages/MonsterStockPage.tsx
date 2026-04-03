@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { Flame, TrendingUp, Ban, Info } from 'lucide-react'
-import { monsterCandidates, sectorStrength } from '@/data/trading-data'
+import { useTradingData } from '@/store/TradingDataContext'
 import { formatPercent } from '@/lib/utils'
 
 function GradeTag({ grade }: { grade: 'A' | 'B' | 'C' }) {
@@ -34,6 +34,7 @@ function ProbabilityBar({ value }: { value: number }) {
 }
 
 export default function MonsterStockPage() {
+  const { monsterCandidates, sectorStrength } = useTradingData()
   const aCandidates = monsterCandidates.filter(c => c.grade === 'A')
   const bCandidates = monsterCandidates.filter(c => c.grade === 'B')
 

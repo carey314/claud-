@@ -12,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const CWD = os.homedir() + '/projects/AI_Project/todoDemo/claude盯盘'
+const TRADING_DATA_PATH = path.join(CWD, 'trading-data.json')
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -150,6 +151,21 @@ ipcMain.handle('env:setup-claude', async () => {
   return { success: !result.includes('ERR'), output: result }
 })
 
+// ---- 交易数据 JSON 读取 + 文件监听 ----
+function readTradingData(): any {
+  try {
+    const raw = fs.readFileSync(TRADING_DATA_PATH, 'utf-8')
+    return JSON.parse(raw)
+  } catch (err) {
+    console.error('[trading-data] 读取失败:', err)
+    return null
+  }
+}
+
+ipcMain.handle('trading-data:get', () => {
+  return readTradingData()
+})
+
 // ---- IPC ----
 ipcMain.on('terminal:input', (_e, data: string) => {
   shell?.write(data)
@@ -259,6 +275,16 @@ function startProductionServer() {
       return
     }
 
+    // 服务 trading-data.json（实时数据）
+    if (req.url === '/trading-data.json') {
+      try {
+        const content = fs.readFileSync(TRADING_DATA_PATH, 'utf-8')
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(content)
+      } catch { res.writeHead(404); res.end() }
+      return
+    }
+
     let filePath = path.join(distPath, req.url === '/' ? 'index.html' : req.url || '')
     if (!fs.existsSync(filePath)) filePath = path.join(distPath, 'index.html')
     const ext = path.extname(filePath)
@@ -293,6 +319,22 @@ app.whenReady().then(() => {
   }
   createWindow()
   createTray()
+
+  // 监听 trading-data.json 变化，推送到渲染进程
+  if (fs.existsSync(TRADING_DATA_PATH)) {
+    let watchDebounce: NodeJS.Timeout | null = null
+    fs.watch(TRADING_DATA_PATH, () => {
+      if (watchDebounce) clearTimeout(watchDebounce)
+      watchDebounce = setTimeout(() => {
+        const data = readTradingData()
+        if (data && mainWindow) {
+          mainWindow.webContents.send('trading-data:updated', data)
+          console.log('[trading-data] 数据已更新，已推送到UI')
+        }
+      }, 300)
+    })
+    console.log('[trading-data] 正在监听:', TRADING_DATA_PATH)
+  }
 
   app.on('activate', () => {
     if (!mainWindow) createWindow()

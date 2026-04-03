@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, type ReactNode } from 'react'
 import {
   Wallet, ShieldCheck, Flame,
   BookOpen, Clock, LayoutDashboard,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { AppProvider } from './store/AppContext'
+import { TradingDataProvider, useTradingDataSafe } from './store/TradingDataContext'
 import { I18nProvider, useI18n } from './i18n'
 import SetupPage from './pages/SetupPage'
 import TerminalPage from './pages/TerminalPage'
@@ -170,6 +171,13 @@ function AppInner() {
   )
 }
 
+function TradingDataLoadingGate({ children }: { children: ReactNode }) {
+  const { data, loading, error } = useTradingDataSafe()
+  if (loading) return <div className="h-screen bg-[#18191c] flex items-center justify-center text-[#9ca3af]">加载交易数据...</div>
+  if (error || !data) return <div className="h-screen bg-[#18191c] flex items-center justify-center text-[#ef4444]">数据加载失败: {error}</div>
+  return <>{children}</>
+}
+
 export default function App() {
   const [setupDone, setSetupDone] = useState(false)
 
@@ -178,7 +186,11 @@ export default function App() {
     return (
       <I18nProvider>
         <AppProvider>
-          <AppInner />
+          <TradingDataProvider>
+            <TradingDataLoadingGate>
+              <AppInner />
+            </TradingDataLoadingGate>
+          </TradingDataProvider>
         </AppProvider>
       </I18nProvider>
     )
@@ -195,7 +207,11 @@ export default function App() {
   return (
     <I18nProvider>
       <AppProvider>
-        <AppInner />
+        <TradingDataProvider>
+          <TradingDataLoadingGate>
+            <AppInner />
+          </TradingDataLoadingGate>
+        </TradingDataProvider>
       </AppProvider>
     </I18nProvider>
   )

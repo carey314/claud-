@@ -3,7 +3,7 @@ import {
   TrendingUp, TrendingDown, Wallet, Target,
   AlertTriangle, Activity, ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
-import { summary, etfHoldings, stockHoldings, tradeHistory, sectorStrength, redLines } from '@/data/trading-data'
+import { useTradingData } from '@/store/TradingDataContext'
 import { formatMoney, formatPercent, pnlColor } from '@/lib/utils'
 
 function StatCard({ label, value, sub, icon: Icon, color, delay }: {
@@ -27,6 +27,7 @@ function StatCard({ label, value, sub, icon: Icon, color, delay }: {
 }
 
 export default function DashboardPage() {
+  const { summary, etfHoldings, stockHoldings, tradeHistory, sectorStrength, redLines } = useTradingData()
   const etfTotalPnl = etfHoldings.reduce((s, e) => s + e.pnl, 0)
   const winTrades = tradeHistory.filter(t => t.pnl > 0)
   const loseTrades = tradeHistory.filter(t => t.pnl < 0)

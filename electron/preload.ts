@@ -21,6 +21,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('terminal:exit', listener)
   },
 
+  // 交易数据（JSON 实时同步）
+  getTradingData: () => ipcRenderer.invoke('trading-data:get'),
+  onTradingDataUpdate: (cb: (data: any) => void) => {
+    const listener = (_e: any, data: any) => cb(data)
+    ipcRenderer.on('trading-data:updated', listener)
+    return () => ipcRenderer.removeListener('trading-data:updated', listener)
+  },
+
   // 环境检测 & 安装
   checkEnv: () => ipcRenderer.invoke('env:check'),
   setupTtyd: () => ipcRenderer.invoke('env:setup-ttyd'),

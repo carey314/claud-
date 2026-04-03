@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { BookOpen, CheckCircle2, XCircle, Clock, BarChart3 } from 'lucide-react'
-import { journalEntries, accuracyStats } from '@/data/trading-data'
+import { useTradingData } from '@/store/TradingDataContext'
 
 function ResultBadge({ result }: { result: '正确' | '错误' | '待验证' }) {
   const styles = {
@@ -41,6 +41,7 @@ function AccuracyBar({ rate }: { rate: number }) {
 }
 
 export default function JournalPage() {
+  const { journalEntries, accuracyStats } = useTradingData()
   const correct = journalEntries.filter(j => j.result === '正确').length
   const wrong = journalEntries.filter(j => j.result === '错误').length
   const pending = journalEntries.filter(j => j.result === '待验证').length

@@ -4,7 +4,7 @@ import {
   ShieldAlert, TrendingUp, TrendingDown, Clock,
   Check, X, Zap, BookOpen,
 } from 'lucide-react'
-import { entryConditions, stopRules, lessons, redLines, tradeHistory, summary } from '@/data/trading-data'
+import { useTradingData } from '@/store/TradingDataContext'
 import { pnlColor } from '@/lib/utils'
 
 function Toggle({ active, onToggle }: { active: boolean; onToggle?: () => void }) {
@@ -25,6 +25,7 @@ function Toggle({ active, onToggle }: { active: boolean; onToggle?: () => void }
 }
 
 export default function TradingSystemPage() {
+  const { entryConditions, stopRules, lessons, redLines, tradeHistory, summary } = useTradingData()
   const [conditions, setConditions] = useState(entryConditions.map(c => ({ ...c })))
 
   const toggleCondition = (id: number) => {
