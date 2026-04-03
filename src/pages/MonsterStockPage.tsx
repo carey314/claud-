@@ -17,10 +17,11 @@ function GradeTag({ grade }: { grade: 'A' | 'B' | 'C' }) {
 }
 
 function ProbabilityBar({ value }: { value: number }) {
+  if (value <= 0) return null
   const color = value >= 50 ? 'bg-[#f59e0b]' : value >= 40 ? 'bg-[#06b6d4]' : 'bg-[#9ca3af]'
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-20 h-1.5 bg-[#18191c] rounded-full overflow-hidden">
+    <div className="flex items-center gap-2 shrink-0">
+      <div className="w-16 h-1.5 bg-[#18191c] rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
@@ -28,7 +29,7 @@ function ProbabilityBar({ value }: { value: number }) {
           className={`h-full rounded-full ${color}`}
         />
       </div>
-      <span className="text-xs font-mono text-[#9ca3af]">{value}%</span>
+      <span className="text-[10px] font-mono text-[#9ca3af]">{value}%</span>
     </div>
   )
 }
@@ -141,17 +142,20 @@ export default function MonsterStockPage() {
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.15 + i * 0.05 }}
-                  className="bg-[#1e1f22] border border-[#2c2e33] rounded p-3 flex items-center justify-between"
+                  className="bg-[#1e1f22] border border-[#2c2e33] rounded p-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-[#06b6d4] font-mono text-sm">{c.code}</span>
-                    <span className="text-[#e4e5e7] text-sm">{c.name}</span>
-                    <span className="text-xs text-[#9ca3af]">¥{c.price} · {c.sector}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-[#9ca3af] truncate max-w-[200px]">{c.logic}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#06b6d4] font-mono text-sm">{c.code}</span>
+                      <span className="text-[#e4e5e7] text-sm">{c.name}</span>
+                      <span className="text-[10px] text-[#9ca3af] font-mono">¥{c.price} · {c.sector}</span>
+                    </div>
                     <ProbabilityBar value={c.probability} />
                   </div>
+                  <div className="text-xs text-[#9ca3af]">{c.logic}</div>
+                  {c.status && (
+                    <div className="mt-1 text-[10px] text-[#9ca3af] font-mono">{c.status}</div>
+                  )}
                 </motion.div>
               ))}
             </div>

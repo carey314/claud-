@@ -205,42 +205,44 @@ export default function DashboardPage() {
         <div className="px-5 py-3 border-b border-[#2c2e33]">
           <h2 className="text-sm font-medium text-white">最近交易</h2>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-[#25262b] text-[#9ca3af] text-xs">
-              <th className="px-5 py-2 text-left font-normal">日期</th>
-              <th className="px-5 py-2 text-left font-normal">代码</th>
-              <th className="px-5 py-2 text-left font-normal">名称</th>
-              <th className="px-5 py-2 text-left font-normal">方向</th>
-              <th className="px-5 py-2 text-right font-normal">数量</th>
-              <th className="px-5 py-2 text-right font-normal">价格</th>
-              <th className="px-5 py-2 text-right font-normal">盈亏</th>
-              <th className="px-5 py-2 text-left font-normal pl-8">原因</th>
-            </tr>
-          </thead>
-          <tbody className="font-mono text-xs">
-            {tradeHistory.slice(0, 5).map((t, i) => (
-              <tr key={i} className="border-b border-[#2c2e33] last:border-0 hover:bg-[#25262b]/50 transition-colors h-9">
-                <td className="px-5 text-[#e4e5e7]">{t.date}</td>
-                <td className="px-5 text-[#06b6d4]">{t.code}</td>
-                <td className="px-5 text-[#e4e5e7] font-sans">{t.name}</td>
-                <td className="px-5 font-sans">
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] border ${
-                    t.direction === '买入' ? 'text-[#10b981] border-[#10b981]/30 bg-[#10b981]/10' :
-                    t.direction === '止损' ? 'text-[#ef4444] border-[#ef4444]/30 bg-[#ef4444]/10' :
-                    'text-[#f59e0b] border-[#f59e0b]/30 bg-[#f59e0b]/10'
-                  }`}>{t.direction}</span>
-                </td>
-                <td className="px-5 text-right text-[#e4e5e7]">{t.shares}</td>
-                <td className="px-5 text-right text-[#e4e5e7]">{t.price.toFixed(2)}</td>
-                <td className={`px-5 text-right ${pnlColor(t.pnl)}`}>
-                  {t.pnl >= 0 ? '+' : ''}{t.pnl}
-                </td>
-                <td className="px-5 text-[#9ca3af] font-sans pl-8">{t.reason}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs whitespace-nowrap">
+            <thead>
+              <tr className="bg-[#25262b] text-[#9ca3af]">
+                <th className="px-3 py-2 text-left font-normal">日期</th>
+                <th className="px-3 py-2 text-left font-normal">代码</th>
+                <th className="px-3 py-2 text-left font-normal">名称</th>
+                <th className="px-3 py-2 text-left font-normal">方向</th>
+                <th className="px-3 py-2 text-right font-normal">数量</th>
+                <th className="px-3 py-2 text-right font-normal">价格</th>
+                <th className="px-3 py-2 text-right font-normal">盈亏</th>
+                <th className="px-3 py-2 text-left font-normal pl-4">原因</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="font-mono">
+              {tradeHistory.slice(0, 5).map((t, i) => (
+                <tr key={i} className="border-b border-[#2c2e33] last:border-0 hover:bg-[#25262b]/50 transition-colors h-8">
+                  <td className="px-3 text-[#e4e5e7]">{t.date}</td>
+                  <td className="px-3 text-[#06b6d4]">{t.code}</td>
+                  <td className="px-3 text-[#e4e5e7] font-sans">{t.name}</td>
+                  <td className="px-3 font-sans">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] border ${
+                      t.direction === '买入' ? 'text-[#10b981] border-[#10b981]/30 bg-[#10b981]/10' :
+                      t.direction === '止损' ? 'text-[#ef4444] border-[#ef4444]/30 bg-[#ef4444]/10' :
+                      'text-[#f59e0b] border-[#f59e0b]/30 bg-[#f59e0b]/10'
+                    }`}>{t.direction}</span>
+                  </td>
+                  <td className="px-3 text-right text-[#e4e5e7]">{t.shares}</td>
+                  <td className="px-3 text-right text-[#e4e5e7]">{t.price.toFixed(2)}</td>
+                  <td className={`px-3 text-right ${pnlColor(t.pnl)}`}>
+                    {t.pnl >= 0 ? '+' : ''}{t.pnl}
+                  </td>
+                  <td className="px-3 text-[#9ca3af] font-sans pl-4 max-w-[180px] truncate">{t.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </motion.div>
     </div>
   )
