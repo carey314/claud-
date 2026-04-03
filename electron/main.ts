@@ -19,6 +19,32 @@ let tray: Tray | null = null
 let shell: pty.IPty | null = null
 let ttydProcess: ChildProcess | null = null
 
+// ---- trading-data.json 实时监听 ----
+function readTradingData(): any {
+  try {
+    return JSON.parse(fs.readFileSync(TRADING_DATA_PATH, 'utf-8'))
+  } catch {
+    return null
+  }
+}
+
+function watchTradingData() {
+  let debounce: ReturnType<typeof setTimeout> | null = null
+  fs.watch(TRADING_DATA_PATH, () => {
+    if (debounce) clearTimeout(debounce)
+    debounce = setTimeout(() => {
+      const data = readTradingData()
+      if (data && mainWindow) {
+        console.log('[data] trading-data.json 变更，推送到前端')
+        mainWindow.webContents.send('trading-data:updated', data)
+      }
+    }, 300)
+  })
+  console.log('[data] 监听', TRADING_DATA_PATH)
+}
+
+ipcMain.handle('trading-data:get', () => readTradingData())
+
 // ---- ttyd 管理（生产模式下为前端终端提供服务）----
 function startTtyd() {
   const env = { ...process.env }
@@ -264,6 +290,14 @@ function startProductionServer() {
   }
 
   const localServer = http.createServer((req, res) => {
+    // /trading-data.json → 实时读取
+    if (req.url === '/trading-data.json') {
+      const data = readTradingData()
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' })
+      res.end(JSON.stringify(data))
+      return
+    }
+
     // /terminal/ 代理到 ttyd
     if (req.url?.startsWith('/terminal')) {
       const proxy = http.request(
@@ -317,6 +351,7 @@ app.whenReady().then(() => {
   if (!process.env.VITE_DEV_SERVER_URL) {
     startProductionServer()
   }
+  watchTradingData()
   createWindow()
   createTray()
 

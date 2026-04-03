@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'motion/react'
 import { RefreshCw, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useTradingData } from '@/store/TradingDataContext'
+import type { FundHolding } from '@/data/trading-data-types'
 import { formatMoney, formatPercent, pnlColor } from '@/lib/utils'
 
 type AccountTab = 'guoxin' | 'tonghuashun' | 'zhifubao'
@@ -207,7 +208,7 @@ export default function PortfolioPage() {
 }
 
 function FundTable({ funds, total, pnl }: {
-  funds: typeof import('@/data/trading-data').fundHoldings; total: number; pnl: number
+  funds: FundHolding[]; total: number; pnl: number
 }) {
   return (
     <div className="bg-[#1e1f22] border border-[#2c2e33] rounded overflow-hidden">
